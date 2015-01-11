@@ -1,0 +1,349 @@
+//vector<Mat> EdgesU=*ExtEdges(imgarr[7]);
+	//vector<Mat> EdgesD=*ExtEdges(imgarr[8]);
+	//cout<<CompareEdges(EdgesU[DOWN],EdgesD[UP],THOLD)<<"****"<<endl;
+	//vector<string>Matches=*FindMatchingEdges(imgarr);
+	//Mat ThreeRows=FindMatchingRows(imgarr);
+	
+	/*for (int i = 0; i < Matches.size(); i++)
+	{cout<<Matches.at(i)<<endl;
+	
+	}*/
+	
+	//namedWindow("DisplayD",WINDOW_AUTOSIZE);
+	//imshow("DisplayD",imgarr[4]);
+	/*namedWindow("Right",WINDOW_AUTOSIZE);
+	namedWindow("Up",WINDOW_AUTOSIZE);
+	namedWindow("Down",WINDOW_AUTOSIZE);
+	imshow("Right",Edges[RIGHT]);
+	imshow("Left",Edges[LEFT]);
+	imshow("Up",Edges[UP]);
+	imshow("Down",Edges[DOWN]);*/
+	//imshow("Display",example);
+	imshow("Display",fImg);
+	waitKey(0);
+	return 0;
+	Mat image=imread("c:/spics/1.jpg");
+	//delete(temp);
+	//Size s(image.cols/2,image.rows/2);
+	cout<<"after imread"<<endl;
+	Mat image2;
+	cout<<"after image2"<<endl;
+	Mat image3;
+	//OutputArray a=image2;
+	//InputArray b =image;
+	resize(image,image2,Size(640,480));
+	Point2f center((int)(image2.cols/2),(int)(image2.rows/2));
+	Mat rotate=getRotationMatrix2D(center,90,1);
+	Point invertedCenter(center.y,center.x);
+	warpAffine(image2,image3,rotate,Point(center*2));
+	cvtColor(image3,image3,CV_RGB2GRAY);
+
+	cout <<image2.size()<<endl;
+	Mat example(255,255,0);
+	example=(example/51)*255;
+	//cout<<example;
+	if(!image.data){
+		cout<<"could not open"<<endl;
+		cout<<"enter a key to continue"<<endl;
+		getchar();
+		return -1;
+	}
+
+	image3=image3((Rect(image2.cols/2-image2.rows/2,0,image2.rows,image3.rows)));
+	Mat imgarr[9];
+	
+	namedWindow("Display",WINDOW_AUTOSIZE);
+
+
+
+
+	Mat FindMatchingRows(Mat* imgarr,int size){
+	int newSize=(int)pow(size,0.5);
+
+	if(newSize*newSize!=size){
+		return imgarr[0];//cant work;
+	}
+	int *notused=new int[size];
+	for (int i = 0; i < size; i++){notused[i]=0;}//nullify array
+	int finalsize=imgarr[0].cols*newSize;
+	double edgeL=THOLD;
+	double edgeR=THOLD;
+	
+	short *rows=new short[newSize];
+	for(int j=0;j<newSize;j++)//for all of the rows 
+	{
+		int x=-1; 
+		for(int z=0;z<size;z++)//looking for unused Images
+			if(notused[z]==0)//
+			{x=z;//setting the current index as x
+				notused[x]=2;//Image being worked on right now
+				break;
+			}//
+		int counter=0;
+	while(imgarr[x].cols!=finalsize&&counter!=10000){
+		counter++;//safety feature
+		//making the full rows 
+		for (int q = 0; q < size; q++)
+		{
+			cout<<notused[q]<<",";//debug
+		}
+		cout<<endl;//debug
+	vector<Mat> edgesa=*ExtEdges(imgarr[x]);
+	edgeR=THOLD;
+	edgeL=THOLD;
+	short bestMatchLR=-1;
+	short bestMatchRL=-1;
+	
+	for(int i=0;i<size;i++){//looking for the image 
+		vector<Mat> edgesb=*ExtEdges(imgarr[i]);//looking for a match
+		if(notused[i]==0&&notused[x]==2){
+
+			if(CompareEdges(edgesa[LEFT],edgesb[RIGHT],4)[MeasureBy]<edgeL)//checking match on the left side
+			{
+				edgeL=CompareEdges(edgesa[LEFT],edgesb[RIGHT],4)[MeasureBy];
+				bestMatchLR=i;
+			}
+			 if(CompareEdges(edgesa[RIGHT],edgesb[LEFT],4)[MeasureBy]<edgeR)//checking match on the right side
+			 {
+					edgeR=CompareEdges(edgesa[RIGHT],edgesb[LEFT],4)[MeasureBy];//set edgeR to the current best
+					bestMatchRL=i;//keep the index of the best match on the right side
+				}
+
+	}//end if(notused[i]==0&&notused[x]==2)
+	}//end for(int i=0;i<9;i++)
+	//connect the images
+		if(edgeR<=edgeL){//right is better then left for x 
+			if(bestMatchRL==bestMatchLR&&bestMatchLR!=-1){//if the peices are the same
+					hconcat(imgarr[x],imgarr[bestMatchRL],imgarr[x]);//connect the x right side to the matches left side
+					notused[bestMatchLR]=-1;
+				}
+			else if(bestMatchRL>=0)
+		 {//found a match on the right side
+			hconcat(imgarr[x],imgarr[bestMatchRL],imgarr[x]);
+			notused[bestMatchRL]=-1;//setting the used images as -1 in the notused array
+		}
+			}
+		else{
+			if(bestMatchRL==bestMatchLR&&bestMatchLR!=-1){
+					hconcat(imgarr[bestMatchLR],imgarr[x],imgarr[x]);//concat to the left side store it in the spot 
+					notused[bestMatchLR]=-1;//setting the used images as -1 in the notused array
+					
+			}
+			else if(bestMatchLR>=0){//found a match on the left side
+			hconcat(imgarr[bestMatchLR],imgarr[x],imgarr[x]);//concat to the left side store it in the spot 
+			notused[bestMatchLR]=-1;//setting the used images as -1 in the notused array
+		}
+		
+		}
+
+	}//end while(imgarr[x].cols!=finalsize)
+	notused[x]=3;
+	rows[j]=x;
+	
+	}//end for(int j=0;j<3;j++)
+	//***********************************************************
+	//phase one complete //rows are constructed now and all ready for phase two
+	//connect the rows together
+	int finalRows=imgarr[rows[0]].rows*newSize;
+	namedWindow("display1");
+	namedWindow("display2");
+	namedWindow("display3");
+	imshow("display1",imgarr[rows[0]]);
+		imshow("display2",imgarr[rows[1]]);
+			imshow("display3",imgarr[rows[2]]);
+				//vector<Mat> edgeA=*ExtEdges(imgarr[rows[1]]);//always take the first image and build the full image up on it 
+				//vector<Mat> edgeB=*ExtEdges(imgarr[rows[2]]);
+				waitKey();
+				exit(1);
+				//cout<<"************"<<CompareEdges(edgeA[UP],edgeB[DOWN],THOLDAVG)[MeasureBy]<<"************"<<endl;
+				//cout<<"************"<<CompareEdges(edgeA[DOWN],edgeB[UP],THOLDAVG)[MeasureBy]<<"************"<<endl;
+				
+	short counter=0;
+	while(imgarr[rows[0]].rows!=finalRows&&counter!=100){
+		int bestU=THOLD,bestD=THOLD;
+		int idxD=-1,idxU=-1;
+		int direction=-1;
+	counter++;
+	for (int i =counter; i < newSize; i++){//for each row 
+		vector<Mat> edgeA=*ExtEdges(imgarr[rows[0]]);//always take the first image and build the full image up on it 
+		vector<Mat> edgeB=*ExtEdges(imgarr[rows[i]]);
+		if(bestU>CompareEdges(edgeA[UP],edgeB[DOWN],THOLDAVG)[MeasureBy])
+		{
+			bestU=CompareEdges(edgeA[UP],edgeB[DOWN],THOLDAVG)[MeasureBy];
+			idxU=i;
+		}
+		
+		if(bestD>CompareEdges(edgeA[DOWN],edgeB[UP],THOLDAVG)[MeasureBy]){
+			bestD=CompareEdges(edgeA[DOWN],edgeB[UP],THOLDAVG)[MeasureBy];
+			idxD=i;
+		}	}
+	if(bestD>bestU){
+				vconcat(imgarr[rows[idxU]],imgarr[rows[0]],imgarr[rows[0]]);
+			cout<<"**********"<<bestD<<","<<bestU<<"**********"<<endl;
+			}
+	else if(idxD!=-1){
+				vconcat(imgarr[rows[0]],imgarr[rows[idxD]],imgarr[rows[0]]);
+			cout<<"**********"<<bestD<<","<<bestU<<"**********"<<endl;
+			}
+
+
+
+	}
+	int idx=rows[0];
+	free(rows);
+	free(notused);
+	return imgarr[idx];
+}
+
+double* CompareEdges(Mat Ed1,Mat Ed2,const short th){
+	if(Ed1.size()!=Ed2.size()){
+		return false;
+	}
+
+	double *res=new double[3];
+	double avgEd1=0,avgEd2=0;//avg value first edge
+	int deved1=0,deved2=0;
+	int *H1 =calcHisto(Ed1);
+	int* H2=calcHisto(Ed2);
+	int result=0;
+	for (int i = 0; i < 256; i++)
+	{
+		result+=abs(H1[i]-H2[i]);
+	}
+	//cout<<Ed1;
+	double cov=0;
+	int difference=0;
+	Mat A=abs(Ed1-Ed2);
+	Scalar Sequality=sum(A);
+	int equality=Sequality[0];
+	int eql=0,eqlA=0;
+	for (int i = 0; i < A.rows*A.cols; i++)
+	{eql+=A.data[i];
+	eqlA+=abs(Ed1.data[i]-Ed2.data[i]);
+	}
+	cout<<"**********************************"<<endl;
+	cout<<"******************"<<eqlA<<"****************"<<endl;
+	cout<<"******************"<<eql<<"****************"<<endl;
+	cout<<"******************"<<equality<<"****************"<<endl;
+	cout<<"**********************************"<<endl;
+	
+	short len=A.rows*A.cols;
+	for (int i=0;i<len;i++)
+	{if(abs(A.data[i])>=th)
+		difference++;
+	avgEd1+=(double)Ed1.data[i]/len;
+	avgEd2+=(double)Ed2.data[i]/len;
+	}
+	for (int i = 0; i < len; i++)
+	{deved1+=pow(avgEd1-Ed1.data[i],2);
+	deved2+=pow(avgEd2-Ed2.data[i],2);
+	cov+=(abs(avgEd2-Ed2.data[i])*abs(avgEd1-Ed1.data[i]))/len;//measuring covarience
+	}
+	deved1=sqrt(deved1);//deviation from the mean edge1
+	deved2=sqrt(deved2);//deviation from the mean edge2
+	res[1]=difference;
+
+	res[0]=abs(avgEd1-avgEd2);
+	//res[2]=equality;
+	res[2]=eqlA;
+	res[3]=cov;
+	return res;
+}
+int main(int argc,char **argv){
+
+	if(argc!=2){
+		cout<<"usage: Display Image to Display"<<endl;
+		//return -1;
+	}
+
+	//vector<string> FilePath=GetFileNames("c:/example");
+	Mat* Files;
+	int pieces=9;
+	try{
+		Files= GetImages("c:/IP/IP/3x3/IMAGE2/",pieces);}
+	catch(exception e){
+	cout<<e.what();
+	return 0;
+	}
+	Mat fImg=FindMatchingRows(Files,pieces);
+	namedWindow("Display",WINDOW_AUTOSIZE);
+	imshow("Display",fImg);
+	waitKey(0);
+	return 0;
+	Mat image=imread("c:/spics/1.jpg");
+	//delete(temp);
+	//Size s(image.cols/2,image.rows/2);
+	cout<<"after imread"<<endl;
+	Mat image2;
+	cout<<"after image2"<<endl;
+	Mat image3;
+	//OutputArray a=image2;
+	//InputArray b =image;
+	resize(image,image2,Size(640,480));
+	Point2f center((int)(image2.cols/2),(int)(image2.rows/2));
+	Mat rotate=getRotationMatrix2D(center,90,1);
+	Point invertedCenter(center.y,center.x);
+	warpAffine(image2,image3,rotate,Point(center*2));
+	cvtColor(image3,image3,CV_RGB2GRAY);
+
+	cout <<image2.size()<<endl;
+	Mat example(255,255,0);
+	example=(example/51)*255;
+	//cout<<example;
+	if(!image.data){
+		cout<<"could not open"<<endl;
+		cout<<"enter a key to continue"<<endl;
+		getchar();
+		return -1;
+	}
+
+	image3=image3((Rect(image2.cols/2-image2.rows/2,0,image2.rows,image3.rows)));
+	Mat imgarr[9];
+	
+	namedWindow("Display",WINDOW_AUTOSIZE);
+	imshow("Display",fImg);
+	waitKey(0);
+	getchar();
+	return 0;
+} 
+
+	int finalRows=Rows[0].rows*newSize;
+				free(notused);
+				notused=new unsigned int[newSize];
+				for (int i = 0; i < newSize; i++)notused[i]=UNUSED;//initialize array
+	while(Rows[0].rows!=finalRows&&counter!=100){
+		unsigned long bestU=THOLD;
+		unsigned long bestD=THOLD;
+		int idxD=-1,idxU=-1;
+		counter++;//safety
+	for (int i =1; i < newSize; i++)
+	{//for each row 
+		if(notused[i]==UNUSED){
+		vector<Mat> edgeA=*ExtEdges(Rows[0]);//always take the first image and build the full image up on it 
+		vector<Mat> edgeB=*ExtEdges(Rows[i]);//extract the i row in the 
+
+		double x=CompareEdges(edgeA[UP],edgeB[DOWN],THOLDAVG)[MeasureBy];
+
+		if(bestU>x)
+		{
+			bestU=x;
+			idxU=i;
+		}
+		double y=CompareEdges(edgeA[DOWN],edgeB[UP],THOLDAVG)[MeasureBy];
+		if(bestD>y){
+			bestD=y;
+			idxD=i;
+		}
+			}
+	}
+	if(bestD>bestU&&idxU!=-1){
+				vconcat(Rows[idxU],Rows[0],Rows[0]);
+				notused[idxU]=DONE;
+			}
+	else if(idxD!=-1){
+				vconcat(Rows[0],Rows[idxD],Rows[0]);
+				notused[idxD]=DONE;
+			}
+	}
+	free(notused);
+	return Rows[0];
