@@ -347,3 +347,56 @@ int main(int argc,char **argv){
 	}
 	free(notused);
 	return Rows[0];
+
+
+	for(int j=0;j<((newSize-1)*newSize);j++)//for all of the rows 
+	{
+		
+		if (nextBest.second.second==LEFT&&imgarr[nextBest.second.first].cols!=finalsize){
+			hconcat(imgarr[nextBest.first],imgarr[nextBest.second.first],imgarr[nextBest.second.first]);//concat to the left side store it
+		notused[nextBest.first]=DURING;
+		if(imgarr[nextBest.second.first].cols==finalsize){
+			notused[nextBest.second.first]=ROW_DONE;
+			Rows[counter]=imgarr[nextBest.second.first];
+		/*	namedWindow("dis1");
+			imshow("dis1",Rows[counter]);
+			cout<<counter<<", Left"<<endl;*/
+			//waitKey();
+			counter++;}
+		}
+		else if (nextBest.second.second==RIGHT&&imgarr[nextBest.first].cols!=finalsize){
+				hconcat(imgarr[nextBest.first],imgarr[nextBest.second.first],imgarr[nextBest.first]);//concat to the left side store it  
+				notused[nextBest.second.first]=DURING;
+					if(imgarr[nextBest.first].cols==finalsize)
+					{
+					notused[nextBest.first]=ROW_DONE;
+					Rows[counter]=imgarr[nextBest.first];
+					counter++;
+					continue;
+					}
+		}
+	
+	}//end for
+	//pair<Mat,Mat> A=CalcSobelDerrivetives(sol);
+	//Images[i]=CalcSobelDerrivetives(Images[i]).second;
+	//Canny( Images[i], Images[i], 50, 100*4, 3 );	
+
+	vector<unsigned int> A =FindMatchingEdges(FilesTwo,current);
+		switch(A[2])
+		{
+		case LEFT:
+			leftcounter++;
+		break;
+		case RIGHT:
+			rightcounter++;
+			break;
+		case UP:
+			upcounter++;
+			break;
+		case DOWN:
+			downcounter++;
+			break;
+		}
+			cout<<"left, right, up , down"<<endl;
+	cout<<leftcounter<<",     "<<rightcounter<<",   "<<upcounter<<",    "<<downcounter<<endl;
+	cout<<"false Down Rate is, "<< falseDownCounter/downcounter<<endl;
