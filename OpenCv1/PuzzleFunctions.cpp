@@ -1,12 +1,13 @@
 #include "PuzzleFunctions.h"
 //--------------------------------------------------
 const int EDGE_SIZE=1;
-const int THOLDIFF=0 ;
-const int MeasureBy=DIFF;
+const int THOLDIFF=10;
+const int MeasureBy=DIFFSUM;
 const int Method=L1;
+const int horzS=10,diagS=1;//scores for the diffsum measurments 
 //----------------------------------------------------------
 //Compares two images, used to compare two edges although works for matrices as well
-//th is a treshold for the comparison operation if the difference is greater then the th then the vectors are not equal
+//l1 is the method for The distances mesurment 
 //returns an array indicating the difference between the two edges by avg value of each vector
 //and by the number of differences higher then a scalar x
 
@@ -40,8 +41,8 @@ double* CompareEdges(Mat Ed1,Mat Ed2,const short method){
 				  }
 
 			  }
-			  free(H1);
-			  free(H2);
+			  delete [] H1;
+			  delete [] H2;
 			  if(method==L1)
 			  res[HIST]=result;
 			  else
@@ -88,8 +89,8 @@ double* CompareEdges(Mat Ed1,Mat Ed2,const short method){
 				double Diffsum=0;
 				avgEd1=sum(Ed1)[0]/len;
 				avgEd2=sum(Ed2)[0]/len;
-				double x=0;
-				double y=0,z=0;
+				double x=0,y=0,z=0;
+		
 	for (int i = 0; i < Ed1.cols; i++)
 	{
 		for (int j = 0; j < Ed1.rows; j++)
@@ -111,7 +112,8 @@ double* CompareEdges(Mat Ed1,Mat Ed2,const short method){
 					z=(double)abs(Ed1.at<uchar>(j,i)-Ed2.at<uchar>(j,i-1));
 			
 			}
-			Diffsum+=x+y+z;
+
+			Diffsum+=x*horzS+y*diagS+diagS*z;
 			if(x>=THOLDIFF)
 				difference++;
 			if(y>=THOLDIFF)
@@ -124,6 +126,7 @@ double* CompareEdges(Mat Ed1,Mat Ed2,const short method){
 	}	
 		res[DEV]=abs(deved1-deved2);
 		res[AVG]=abs(avgEd1-avgEd2);
+		//cout<<difference<<endl;
 		res[DIFF]=difference;
 		res[DIFFSUM]=Diffsum;
 		res[COV]=cov;
@@ -249,7 +252,7 @@ Mat FindMatchingRows(Mat* imgarr,int size){//throws exception on error
 	//connect the rows together
 	
 	int finalRows=imgarr[rows[0]].rows*newSize;
-				free(notused);
+				delete [](notused);
 				notused=new unsigned int[newSize];
 
 	for (int i = 0; i < newSize; i++)notused[i]=UNUSED;//initialize array 
@@ -295,8 +298,8 @@ Mat FindMatchingRows(Mat* imgarr,int size){//throws exception on error
 	
 	}
 	int idx=rows[0];
-	free(rows);
-	free(notused);
+	delete [](rows);
+	delete [](notused);
 	return imgarr[idx];
 }
 
@@ -345,7 +348,7 @@ Mat SolvePuzzle(Mat* imgarr,int size){//throws exception
 	if(counter!=newSize){
 		throw exception("Cant solve\n");
 			finalsize=Rows[0].rows*newSize;
-	free(notused); 
+	delete [](notused); 
 }
 	notused=new unsigned int[newSize];
 	counter=0;
@@ -367,7 +370,7 @@ Mat SolvePuzzle(Mat* imgarr,int size){//throws exception
 
 }
 
-	free(notused);
+	delete [](notused);
 	for (int i = 0; i < newSize; i++)
 	{if(Rows[i].rows==finalsize)
 	return Rows[i];
@@ -672,7 +675,7 @@ Mat* CreatePuzzle(Mat img,int size){
 	int peiceSize=(int)pow(size,0.5);
 	if(peiceSize*peiceSize!=size)//the input number have to be a squere number
 		throw exception("CreatePuzzle::The number of peices has to be a squere number");
-	if(!img.cols/peiceSize||!img.rows/peiceSize)
+	if(img.cols/peiceSize==0||img.rows/peiceSize==0)
 		throw exception("CreatePuzzle::The image cannot be devided into that many squeres");
 	FixImgSize(img,peiceSize);
 	Mat* imgArr=new Mat[size]();
@@ -857,7 +860,7 @@ Mat* CreatePuzzle(Mat img,int size){
 	//connect the rows together
 	
 	int finalCols=imgarr[cols[0]].cols*newSize;
-				free(notused);
+				delete []notused;
 				notused=new unsigned int[newSize];
 
 	for (int i = 0; i < newSize; i++)notused[i]=UNUSED;//initialize array 
@@ -899,8 +902,8 @@ Mat* CreatePuzzle(Mat img,int size){
 	
 	}
 	int idx=cols[0];
-	free(cols);
-	free(notused);
+	delete[] cols;
+	delete [] notused;
 	return imgarr[idx];
 }
 
@@ -908,10 +911,14 @@ Mat* CreatePuzzle(Mat img,int size){
 
 
   void FixImgSize(Mat &img,short Num){
-
 	int newWidth=img.cols-img.cols%Num;
 	int newHeight=img.rows-img.rows%Num;
-	resize(img,img,Size(newWidth,newHeight));
+	if(newWidth>0&&newHeight>0)
+		resize(img,img,Size(newWidth,newHeight));
+	else {
+		throw exception("FixImgSize::The resize is incompatible with the original image size");
+	
+	}
 
   }
   //-----------------------------------------------------------------------------------------
